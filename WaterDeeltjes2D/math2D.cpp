@@ -21,18 +21,15 @@ Vec2 Vec2::operator/(const float& other) {
 	return Vec2(x / other, y / other);
 }
 
-float Vec2::Distance(const Vec2& u, const Vec2& v) {
-	return std::sqrt((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y));
-}
-
 float Vec2::DistanceTo(const Vec2& u) {
 	return std::sqrt((x - u.x) * (x - u.x) + (y - u.y) * (y - u.y));
 }
 
-Vec2 Vec2::Direction(const Vec2& u, const Vec2& v) {
-	return Vec2((u.x - v.x) / Distance(u, v), (u.y - v.y) / Distance(u, v));
+Vec2 Vec2::DirectionTo(const Vec2& u) {
+	return Vec2((x - u.x) / std::sqrt((x - u.x) * (x - u.x) + (y - u.y) * (y - u.y)),
+		(y - u.y) / std::sqrt((x - u.x) * (x - u.x) + (y - u.y) * (y - u.y))); 
 }
 
-float Vec2::Dot(const Vec2& u, const Vec2& v) {
-	return u.x * v.x + u.y * v.y;
+float Vec2::Dot(const Vec2& v) {
+	return x * v.x + y * v.y;
 }

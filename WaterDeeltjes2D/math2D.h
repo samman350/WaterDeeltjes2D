@@ -16,11 +16,9 @@ public:
 
 	Vec2 operator/(const float& other);
 
-	float Distance(const Vec2& u, const Vec2& v);
-	
 	float DistanceTo(const Vec2& v);
 
-	Vec2 Direction(const Vec2& u, const Vec2& v);
+	Vec2 DirectionTo(const Vec2& v);
 
-	float Dot(const Vec2& u, const Vec2& v);
+	float Dot(const Vec2& v);
 };
