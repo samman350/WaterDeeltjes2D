@@ -16,13 +16,14 @@ public:
 	std::vector<waterDeeltje> neighbours = std::vector<waterDeeltje>();
 	std::vector<float> offsets = std::vector<float>();
 	float mass;
-	bool simulable = true; // is the particle motion dictated by forces (true), or static/other (false)?
+	bool simulable; // is the particle motion dictated by forces (true), or static/other (false)?
 
-	waterDeeltje(Vec2 initPos, Vec2 initVel, Vec2 initAcc, float massParticle):
+	waterDeeltje(Vec2 initPos, Vec2 initVel, Vec2 initAcc, float massParticle, bool simulatable):
 		position(initPos), // initializer list
 		velocity(initVel),
 		newAcceleration(initAcc),
-		mass(massParticle)
+		mass(massParticle),
+		simulable(simulatable)
 		{}
 };
 
@@ -32,15 +33,26 @@ public:
 
 	ParticleSystem(const int N_Particles, const float r_cutoff) {
 		
-		WaterDeeltjes.reserve(N_Particles);
+		//WaterDeeltjes.reserve(N_Particles*N_Particles);
 
 		// maak een NxN grid van deeltjes
 		for (int i = 0; i < N_Particles; i++ ) {
 			for (int j = 0; j < N_Particles; j++ ) {
-				WaterDeeltjes.emplace_back(Vec2((float)i, (float)j),
-					Vec2(0.0f, 0.0f),
-					Vec2(0.0f, 0.0f),
-						1.0f);
+				if (i == 0 || i == N_Particles || j == 0 || j == N_Particles) {
+					WaterDeeltjes.emplace_back(Vec2((float)i, (float)j),
+						Vec2((float)i, (float)j),
+						Vec2(0.0f, 0.0f),
+						1.0f,
+						false); // fix outer particles in grid 
+
+				}
+				else {
+					WaterDeeltjes.emplace_back(Vec2((float)i, (float)j),
+						Vec2((float)i, (float)j),
+						Vec2(0.0f, 0.0f),
+						1.0f,
+						true); 
+				}
 			}
 		}
 		
@@ -63,19 +75,25 @@ public:
 	float springConstant;
 	float springDamping;
 	float timeStep;
-	ParticleSystem deeltjesSysteem;
+	//ParticleSystem deeltjesSysteem;
 
-	void verletSolver(ParticleSystem* ps, float springcst, float springdmp, float timestep) {
-		updatePositions(ps, timestep);
-		updateForces(ps, springcst, springdmp);
+	Simulator(float SpringConst, float SpringDamp, float TimeStep) :
+		springConstant(SpringConst),
+		springDamping(SpringDamp),
+		timeStep(TimeStep)
+		{};
+
+	void verletSolver(ParticleSystem* ps) {
+		updatePositions(ps, timeStep);
+		updateForces(ps, springConstant, springDamping);
 		updateAccelerations(ps);
-		updateVelocities(ps, timestep);
+		updateVelocities(ps, timeStep);
 	}
 
 private:
 
-	float distance;
-	float offset;
+	float distance = 0.0f;
+	float offset = 0.0f;
 	Vec2 delta_v = Vec2(0.0f , 0.0f);
 	Vec2 direction = Vec2(0.0f , 0.0f);
 

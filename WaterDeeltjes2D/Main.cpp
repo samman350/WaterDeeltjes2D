@@ -5,9 +5,17 @@
 #include "waterDeeltje.h"
 
 int main() {
-	ParticleSystem* deeltjesSys = new ParticleSystem(4);
+	int Steps = 1000;
 
-	std::cout << deeltjesSys->WaterDeeltjes.size() << std::endl;
+	ParticleSystem* deeltjesSys = new ParticleSystem(4,1.1f); // arg: sqrt(N), r_cutoff
+	Simulator* Simu = new Simulator(1.0f, 0.1f, 0.005f); // arg: spring constant, spring damping, timestep
+	
+	// RUN SOLVER
+	for (int i = 0; i < Steps; i++) {
+		Simu->verletSolver(deeltjesSys);
+		std::cout << deeltjesSys->WaterDeeltjes[6].position.x << std::endl;
+	}
+	
 }
 
 
