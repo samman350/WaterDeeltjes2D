@@ -14,7 +14,7 @@ public:
 	Vec2 newAcceleration; // de verschillende definities van acc hebben met solver te maken
 
 	Vec2 force = Vec2(0.0f, 0.0f);
-	std::vector<waterDeeltje*> neighbours = std::vector<waterDeeltje*>();
+	std::vector<waterDeeltje*> neighbours = std::vector<waterDeeltje*>(); // list of neighbours is pointers to those neighbours
 	std::vector<float> offsets = std::vector<float>();
 	float mass;
 	bool simulable; // is the particle motion dictated by forces (true), or static/other (false)?
@@ -43,22 +43,15 @@ public:
 					false); // fix outer particles in grid
 
 			}
-			else if (i == 6) {
-				WaterDeeltjes.emplace_back(Vec2((float)i, 0.0f),
-					Vec2(0.0f, 1.0f),
-					Vec2(0.0f, 0.0f),
-					1.0f,
-					true);
-			}
 			else {
 				WaterDeeltjes.emplace_back(Vec2((float)i, 0.0f),
-					Vec2(0.0f, 0.0f),
+					Vec2(0.0f, 0.1f),
 					Vec2(0.0f, 0.0f),
 					1.0f,
 					true);
 			}
 		}
-		// vul de burenlijst (als afstand kleiner dan cutoff dan buren)
+		// vul de burenlijst (als afstand kleiner dan cutoff, dan zijn ze buren)
 		for (int i = 0; i < N_Particles; i++) {
 			for (int j = 0; j < N_Particles; j++) {
 				if (i != j && WaterDeeltjes[i].position.DistanceTo(WaterDeeltjes[j].position) < r_cutoff) {
@@ -75,9 +68,9 @@ public:
 class Simulator {
 public:
 	
-	float springConstant;
-	float springDamping;
-	float timeStep;
+	const float springConstant;
+	const float springDamping;
+	const float timeStep;
 	
 	Simulator(float SpringConst, float SpringDamp, float TimeStep) :
 		springConstant(SpringConst),
@@ -87,8 +80,7 @@ public:
 
 	void verletSolver(ParticleSystem* ps) {
 		updatePositions(ps, timeStep);
-		updateForces(ps, springConstant, springDamping);
-		updateAccelerations(ps);
+		updateForcesAndAccelerations(ps, springConstant, springDamping);
 		updateVelocities(ps, timeStep);
 	}
 
@@ -99,7 +91,7 @@ private:
 	Vec2 delta_v = Vec2(0.0f , 0.0f);
 	Vec2 direction = Vec2(0.0f , 0.0f);
 
-	void calculateForces(waterDeeltje& eneDeeltje, const float springCst, const float springDmp) {
+	void calculateForcesAndAccelerations(waterDeeltje& eneDeeltje, const float springCst, const float springDmp) {
 		eneDeeltje.force = Vec2(0.0f, 0.0f); // set force of previous timestep to zero
 		for (int i = 0; i < eneDeeltje.neighbours.size(); i++) {
 			distance = eneDeeltje.position.DistanceTo(eneDeeltje.neighbours[i]->position); // REMEMBER the array neighbnours contains pointers!
@@ -108,43 +100,36 @@ private:
 			delta_v = eneDeeltje.velocity - eneDeeltje.neighbours[i]->velocity;
 			eneDeeltje.force = eneDeeltje.force - direction * (distance - offset) * springCst
 				- direction*springDmp*(delta_v.Dot(direction)); // last term is damping
+			eneDeeltje.newAcceleration = eneDeeltje.force / eneDeeltje.mass;
 		}
 	}
 
 	void updatePositions(ParticleSystem * deeltjessysteem, const float timestep) {
+		const float timeStep2Div2 = 0.5f * timeStep * timeStep;
 		for (auto& deeltje : deeltjessysteem->WaterDeeltjes) {
 			if (deeltje.simulable) {
+				deeltje.oldAcceleration = deeltje.newAcceleration; // nieuw wordt oud, nu zijn oud en nieuw gelijk
 				deeltje.position = deeltje.position
 					+ deeltje.velocity * timestep
-					+ deeltje.newAcceleration * timestep * timestep * 0.5;
+					+ deeltje.newAcceleration * timeStep2Div2;
 			}
 		}
 	}
 
-	void updateForces(ParticleSystem* deeltjessysteem, const float springCsnt, const float springDmper) {
+	void updateForcesAndAccelerations(ParticleSystem* deeltjessysteem, const float springCsnt, const float springDmper) {
 		for (auto& deeltje : deeltjessysteem->WaterDeeltjes) {
 			if (deeltje.simulable) {
-				calculateForces(deeltje, springCsnt, springDmper);
+				calculateForcesAndAccelerations(deeltje, springCsnt, springDmper);
 			}
-
-		}
-	}
-
-	void updateAccelerations(ParticleSystem* deeltjessysteem) {
-		for (auto& deeltje : deeltjessysteem->WaterDeeltjes) {
-			if (deeltje.simulable) {
-				deeltje.oldAcceleration = deeltje.newAcceleration; // oud wordt nieuw; nieuw schuift door naar oud
-				deeltje.newAcceleration = deeltje.force / deeltje.mass;
-			}
-			
 		}
 	}
 
 	void updateVelocities(ParticleSystem* deeltjessysteem, const float timestep) {
+		const float timeStepDiv2 = 0.5f * timeStep;
 		for (auto& deeltje : deeltjessysteem->WaterDeeltjes) {
 			if (deeltje.simulable) {
 				deeltje.velocity = deeltje.velocity
-					+ (deeltje.oldAcceleration + deeltje.newAcceleration) * timestep * 0.5;
+					+ (deeltje.oldAcceleration + deeltje.newAcceleration) * timeStepDiv2;
 			}
 		}
 	}
